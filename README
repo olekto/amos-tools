@@ -1,8 +1,8 @@
 This is a small tool which is basically a rewritten extractContig, to instead extract 
 a scaffold from an AMOS bank for analysis by amosvalidate and visual inspection in 
-Hawkeye. Bacterial sized assemblies are often small enough that one can load the entire 
-assembly into Hawkeye, but in my experience it's impossible with larger genomes 
-(like vertebrates) to load everything into Hawkeye. 
+Hawkeye. Bacterial sized assemblies are often small enough that one can load the 
+entire assembly into Hawkeye, but in my experience it's impossible with larger 
+genomes (like vertebrates) to load everything into Hawkeye. 
 
 This tool hopefully facilitates this, and makes it possible to inspect scaffolds from
 vertebrate assemblies. 
