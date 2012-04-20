@@ -7,6 +7,16 @@ genomes (like vertebrates) to load everything into Hawkeye.
 This tool hopefully facilitates this, and makes it possible to inspect scaffolds from
 vertebrate assemblies. 
 
+Usage:
+extractScaffold -b <AMOS bank> -l 
+- lists all scaffolds, their IID, EID, number of contigs, number of bases and span. 
+Use this to find the IID of the scaffold of interest.
+
+extractScaffold -b <AMOS bank> -s <scaffold IID> -n <new AMOS bank>
+- extracts the scaffold with IID together with all its reads, fragments,
+libraries and contigs into a new AMOS bank. This new bank can then be inspected by
+Hawkeye or validated by amosvalidate.
+
 License is not decided upon yet, but it builds on source that's under the Artistic 
 License, but I will put it under GPLv3 if possible.
 
