@@ -21,11 +21,13 @@ struct config {
   string        scaffoldid;
   string        newbank;
   bool			listscaff;
-
 };
 config globals;
 
-int minSeqID = 1;
+// For Hawkeye to work, the scaffolds and contigs need to start from IID 1, 
+// this is not the case for reads and fragments, so they are transferred with
+// original IID.
+//int minSeqID = 1;
 int minCtgID = 1;
 int minScfID = 1;
 
@@ -121,27 +123,7 @@ bool GetOptions (int argc, char ** argv)
     PrintHelp();
     return (EXIT_SUCCESS);
   } 
-  /*
-  if (listed_flag && optind < argc)
-    {
-      cerr << "non-option ARGV-elements: " << endl;
-      string curFile;
-      while (optind < argc) {
-        curFile = string(argv[optind++]); 
-        seq2qual[curFile] = curFile.substr(0,curFile.rfind('.'));
-        struct stat stFileInfo;
-        bool bInReturn;
-        int intStat;
-        intStat = stat(string(seq2qual[curFile] + ".QUL").c_str(),&stFileInfo);
-        if (intStat == 0)
-          // We were able to get the file attributes,
-          // so the file exists
-          continue;
-        else
-          seq2qual[curFile] = "";
-      }
-    }      
-  */
+
   return true;
 }
 
@@ -180,7 +162,8 @@ void extract_scaffold(string old_bank, string scaffoldid, string new_bank) {
   //Bank_t contigedge_bank(ContigEdge_t::NCODE);
   Bank_t read_bank(Read_t::NCODE);
   Bank_t fragment_bank(Fragment_t::NCODE);
-  Bank_t library_bank(Library_t::NCODE);
+  //Bank_t library_bank(Library_t::NCODE);
+  BankStream_t library_bank(Library_t::NCODE);
 
   Bank_t newscaffold_bank(Scaffold_t::NCODE);
   Bank_t newcontig_bank(Contig_t::NCODE);
@@ -188,7 +171,8 @@ void extract_scaffold(string old_bank, string scaffoldid, string new_bank) {
   //Bank_t newcontigedge_bank(ContigEdge_t::NCODE);
   Bank_t newread_bank(Read_t::NCODE);
   Bank_t newfragment_bank(Fragment_t::NCODE);
-  Bank_t newlibrary_bank(Library_t::NCODE);
+  //Bank_t newlibrary_bank(Library_t::NCODE);
+  BankStream_t newlibrary_bank(Library_t::NCODE);
 
   cerr << "Extracting scaffold " << scaffoldid << " from " << old_bank
        << " into " << new_bank << " at " << Date() << endl;
@@ -202,6 +186,8 @@ void extract_scaffold(string old_bank, string scaffoldid, string new_bank) {
     read_bank.open(old_bank,     B_READ);
     fragment_bank.open(old_bank, B_READ);
     library_bank.open(old_bank,  B_READ);
+    
+
 
 	if(!newscaffold_bank.exists(new_bank)){newscaffold_bank.create(new_bank);}
     if(!newcontig_bank.exists(new_bank))  {newcontig_bank.create(new_bank);  }
@@ -211,13 +197,6 @@ void extract_scaffold(string old_bank, string scaffoldid, string new_bank) {
     if(!newfragment_bank.exists(new_bank)){newfragment_bank.create(new_bank);}
     if(!newlibrary_bank.exists(new_bank)) {newlibrary_bank.create(new_bank); }
     
-    // This will reserve the libraries IDs for the libraries
-    int maxLib = library_bank.getMaxIID();
-    if (maxLib >= minSeqID) 
-    {
-    	minSeqID = maxLib +1;
-    }
-
 
 	newscaffold_bank.open(new_bank);
     newcontig_bank.open(new_bank);
@@ -234,11 +213,16 @@ void extract_scaffold(string old_bank, string scaffoldid, string new_bank) {
     Read_t read;
     Fragment_t fragment;	
     Library_t library;
-
+    
+    // I'll just stream all the libraries to the new bank at once
+    // since they all are probably needed in the new bank, and it doesn't matter 
+    // much if they all are included anyway.
+    while (library_bank >> library)
+    {
+    	newlibrary_bank << library;
+    }	
     
     scaffold_bank.fetch(atoi(scaffoldid.c_str()), scaffold);
-    //For EID
-    //cout << "scaffold.getIID(): " << scaffold.getIID() << endl;
 
 	vector<Tile_t> & contigs = scaffold.getContigTiling();
 	vector<Tile_t> new_contigs;
@@ -266,42 +250,28 @@ void extract_scaffold(string old_bank, string scaffoldid, string new_bank) {
     		Tile_t read_tile = *ti;
 
       		read_bank.fetch(ti->source, read);
+      		ID_t read_id = read.getIID() ;
       		
       		
-      		if (!newread_bank.existsEID(read.getEID()))
+      		if (!newread_bank.existsIID(read_id))
       		{
 
       			//Got errors because several reads was member of fragment 0, which does not exist. That's because these 'reads' are unitigs.
       			if (read.getFragment() != 0) {
         			fragment_bank.fetch(read.getFragment(), fragment);
-        			ID_t read1 = 0, read2 = 0;
-        
-        			if (!newfragment_bank.existsEID(fragment.getEID()))
+
+        			if (!newfragment_bank.existsIID(fragment.getIID()))
         			{
-          				library_bank.fetch(fragment.getLibrary(), library);
-          
-
-          				if (!newlibrary_bank.existsIID(library.getIID()))
-          				{
-
-          					// Should have the original IIDs
-            				newlibrary_bank.append(library);
-          				}
-						
-						fragment.setIID(minSeqID++);
-						//Update with the library with new IID						
 
           				ID_t mateid = 0;
 
-          				if (fragment.getMatePair().first == read.getIID())
+          				if (fragment.getMatePair().first == read_id)
           				{
             				mateid = fragment.getMatePair().second;
-            				read2 = mateid;
          				}
-          				else if (fragment.getMatePair().second == read.getIID())
+          				else if (fragment.getMatePair().second == read_id)
           				{
-            				mateid = fragment.getMatePair().first;
-            				read1 = mateid;
+            				mateid = fragment.getMatePair().first; 
           				}
 						
 						// Paired read
@@ -309,31 +279,10 @@ void extract_scaffold(string old_bank, string scaffoldid, string new_bank) {
           				{
             				Read_t mate;
             				read_bank.fetch(mateid, mate);
-            				
-            				mate.setIID(minSeqID++);
-            				read.setIID(minSeqID++);
-            				// mate is first read
-            				if (mateid == read1) 
-            				{
-            					fragment.setReads(std::pair<ID_t, ID_t>(mate.getIID(), read.getIID()));
-            				}
-            				else
-            				{
-            					fragment.setReads(std::pair<ID_t, ID_t>(read.getIID(), mate.getIID()));
-            				}
-            				mate.setFragment(fragment.getIID());
-            				read.setFragment(fragment.getIID());
-						    
-						    // adds the mate to the new bank, but not added to tile
-						    // that is done below
+
             				newread_bank.append(mate);
           				}
-          				// Not paired
-          				else
-          				{
-          					read.setIID(minSeqID++);
-          					read.setFragment(fragment.getIID());
-          				}
+
         			}
 					// Update the new bank with fragment and read
 					newfragment_bank.append(fragment);
@@ -342,48 +291,24 @@ void extract_scaffold(string old_bank, string scaffoldid, string new_bank) {
       			} 
       			else {
       				// is a unitig
-      				read.setIID(minSeqID++);
       				newread_bank.append(read);
       			}
-      			// Update the read tile
-      			read_tile.source = read.getIID();
-      			new_reads.push_back(read_tile);
-    		}
-    		//If read exists in new bank, and its fragment also exists in new bank, it was probably a mate of an earlier read. 
-    		else if (newread_bank.existsEID(read.getEID())) {
-    				// Should not be a unitig, but check for that anyway
-    				if (read.getFragment() != 0) {
-    					fragment_bank.fetch(read.getFragment(), fragment);
-    				
-	   					if (newfragment_bank.existsEID(fragment.getEID())) {
-    						Read_t mate;
-    						newread_bank.fetch(read.getEID(), mate);
 
-    						read_tile.source = mate.getIID();
-    						new_reads.push_back(read_tile);
-    					}
-    				}
-    		}
-    			
+    		}	
     	}
  
-    	if (!newcontig_bank.existsEID(contig.getEID()))
-    	{
-    		contig.setIID(minCtgID++);
-    		//setReadTiling
-    		contig.setReadTiling(new_reads);
-    		newcontig_bank.append(contig);
-    	}
+
+    	contig.setIID(minCtgID++);
+    	newcontig_bank.append(contig);
     	ctg_tile.source = contig.getIID();
     	new_contigs.push_back(ctg_tile);
     	
   	} 
-	if (!newscaffold_bank.existsEID(scaffold.getEID()))
-    {
-    	scaffold.setIID(minScfID++);
-    	scaffold.setContigTiling(new_contigs);
-    	newscaffold_bank.append(scaffold);
-    }
+
+    scaffold.setIID(minScfID++);
+    scaffold.setContigTiling(new_contigs);
+    newscaffold_bank.append(scaffold);
+
 //  }
   //catch (Exception_t & e)
   //{
@@ -413,7 +338,9 @@ void extract_scaffold(string old_bank, string scaffoldid, string new_bank) {
 } 
 
 
-//Lists all scaffolds in a bank with 
+// Lists all scaffolds in a bank
+// use with extractScaffold -b e_coli_ca_mp_bogart.bnk -l | sort -k5,5 -n
+// for example, to get the largest scaffold (by span)
 void list_scaffolds(string old_bank) 
 {
 	cerr << "Listing all scaffolds in the bank " << old_bank << " to stdout:" << endl;

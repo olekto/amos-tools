@@ -1,23 +1,28 @@
-This is a small tool which is basically a rewritten extractContig, to instead extract 
-a scaffold from an AMOS bank for analysis by amosvalidate and visual inspection in 
-Hawkeye. Bacterial sized assemblies are often small enough that one can load the 
-entire assembly into Hawkeye, but in my experience it's impossible with larger 
-genomes (like vertebrates) to load everything into Hawkeye. 
+These are a couple of small, hopefully useful, tools for the AMOS system.
 
-This tool hopefully facilitates this, and makes it possible to inspect scaffolds from
-vertebrate assemblies. 
+extractScaffold is basically a rewritten extractContig, made to extract a scaffold 
+instead of just a contig to a new AMOS bank. This new AMOS bank can then be used 
+for analysis with amosvalidate, and visual inspection in Hawkeye.  
+Bacterial sized assemblies are often small enough that one can load the 
+entire assembly into Hawkeye, but in my experience it's impossible with larger 
+genomes (like vertebrates) to load everything into Hawkeye, so the option of loading
+just one scaffold should be useful. The scaffold view in Hawkeye might be a bit slow
+however.
 
 Usage:
 extractScaffold -b <AMOS bank> -l 
 - lists all scaffolds, their IID, EID, number of contigs, number of bases and span. 
-Use this to find the IID of the scaffold of interest.
+Use this to find the IID of the scaffold of interest. This command for example, will 
+sort the output by span size in the bank called e_coli_ca_mp_bogart.bnk:
+extractScaffold -b e_coli_ca_mp_bogart.bnk -l | sort -k5,5 -n
 
 extractScaffold -b <AMOS bank> -s <scaffold IID> -n <new AMOS bank>
 - extracts the scaffold with IID together with all its reads, fragments,
 libraries and contigs into a new AMOS bank. This new bank can then be inspected by
 Hawkeye or validated by amosvalidate.
 
-License is not decided upon yet, but it builds on source that's under the Artistic 
-License, but I will put it under GPLv3 if possible.
+bank2sam is a 
+
+
 
 Ole Kristian Tørresen
