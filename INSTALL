@@ -1,4 +1,13 @@
-You will have to modify the Makefile to point to the AMOS include and library directory. 
-After that, just type "make" and it will compile. Afterwards, you may move
-extractScaffold to whereever you want.
+I've only included a makefile with these programs. You will have to edit the makefile 
+yourself to set the proper path to AMOS' include and library directories (I could
+probably have done it somewhat different and easier, but I do not know how at the moment.)
+
+You have to have an AMOS installation somewhere to be able to use these programs.
+
+You can use the programs where ever you want after compiling them.
+
+As for licensing, they are under the original Artistic License for the moment, but this
+might change later (to GPL or something).
+
+Ole Kristian Tørresen
 

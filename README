@@ -21,8 +21,22 @@ extractScaffold -b <AMOS bank> -s <scaffold IID> -n <new AMOS bank>
 libraries and contigs into a new AMOS bank. This new bank can then be inspected by
 Hawkeye or validated by amosvalidate.
 
-bank2sam is a 
+bank2sam is an extension of the bank2contig SAM exporting ability. It will output the 
+reads in an AMOS bank as SAM entries to standard out. In contrast with bank2contig, 
+the template length is included, mates are kept and you can choose between
+having contigs or scaffolds as reference. (Note: In some assemblies you have negative
+gaps between contigs, and if you use scaffolds as reference, you might not see a 
+good alignment using the scaffold FASTA file as reference in for example Tablet. Celera
+for instance will put 20 Ns between contigs with negative gaps.)
+bank2sam will not output SAM headers.
 
+
+Usage:
+bank2sam -b <AMOS bank> -c > reads.sam
+- outputs all reads in the AMOS bank to reads.sam with contigs as reference.
+
+bank2sam -b <AMOS bank> -s 
+- outputs all reads in the AMOS bank to standard out with scaffolds as reference.
 
 
 Ole Kristian Tørresen
